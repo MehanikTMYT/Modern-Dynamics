@@ -4,11 +4,16 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id 'net.neoforged.moddev' version '2.0.134'
+        id 'net.neoforged.moddev' version '2.0.147'
         id 'com.matthewprenger.cursegradle' version '1.4.0'
         id 'com.modrinth.minotaur' version '2.+'
         id 'dev.lukebemish.immaculate' version '0.1.16'
     }
+}
+
+plugins {
+    // Toolchain auto-provisioning: NeoForge's asset downloader needs a Java 21 toolchain.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 rootProject.name = "Modern-Dynamics"

@@ -22,14 +22,15 @@ import com.mojang.serialization.MapCodec;
 import dev.technici4n.moderndynamics.model.PipeModelData;
 import dev.technici4n.moderndynamics.util.MdId;
 import java.util.List;
-import net.minecraft.client.renderer.block.model.BlockModelPart;
-import net.minecraft.client.renderer.block.model.BlockStateModel;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.DynamicBlockStateModel;
 import net.neoforged.neoforge.client.model.block.CustomUnbakedBlockStateModel;
@@ -37,7 +38,7 @@ import net.neoforged.neoforge.client.model.block.CustomUnbakedBlockStateModel;
 public record PipeBlockstateModel(PipeModelGenerator generator) implements DynamicBlockStateModel {
 
     @Override
-    public void collectParts(BlockAndTintGetter level, BlockPos pos, BlockState state, RandomSource random, List<BlockModelPart> parts) {
+    public void collectParts(BlockAndTintGetter level, BlockPos pos, BlockState state, RandomSource random, List<BlockStateModelPart> parts) {
         var pipeData = level.getModelData(pos).get(PipeModelData.PIPE_DATA);
         if (pipeData == null) {
             pipeData = PipeModelData.DEFAULT;
@@ -47,8 +48,14 @@ public record PipeBlockstateModel(PipeModelGenerator generator) implements Dynam
     }
 
     @Override
-    public TextureAtlasSprite particleIcon() {
-        return generator.particleIcon();
+    public Material.Baked particleMaterial() {
+        return new Material.Baked(generator.particleIcon(), false);
+    }
+
+    @Override
+    @BakedQuad.MaterialFlags
+    public int materialFlags() {
+        return generator.materialFlags();
     }
 
     public record Unbaked(PipeModelGenerator.Unbaked generator) implements CustomUnbakedBlockStateModel {

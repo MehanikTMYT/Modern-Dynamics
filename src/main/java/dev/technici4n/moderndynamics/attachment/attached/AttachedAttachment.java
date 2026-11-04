@@ -66,7 +66,7 @@ public class AttachedAttachment {
     }
 
     public Component getDisplayName() {
-        return item.getName();
+        return item.getName(new ItemStack(item));
     }
 
     public AttachmentModelData getModelData() {

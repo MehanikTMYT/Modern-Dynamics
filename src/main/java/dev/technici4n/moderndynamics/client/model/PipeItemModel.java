@@ -54,7 +54,7 @@ public record PipeItemModel(PipeModelGenerator generator) implements ItemModel {
         public static final MapCodec<Unbaked> MAP_CODEC = PipeModelGenerator.Unbaked.MAP_CODEC.xmap(Unbaked::new, Unbaked::generator);
 
         @Override
-        public ItemModel bake(ItemModel.BakingContext context) {
+        public ItemModel bake(ItemModel.BakingContext context, org.joml.Matrix4fc transformation) {
             return new PipeItemModel(generator.bake(context.blockModelBaker()));
         }
 

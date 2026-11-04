@@ -36,13 +36,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.client.resources.model.cuboid.ItemTransforms;
 import net.minecraft.client.renderer.item.ModelRenderProperties;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.Material;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ResolvableModel;
 import net.minecraft.core.Direction;
@@ -98,8 +96,7 @@ public class PipeModelGenerator {
 
             baseMeshes[connections] = new PipeModelSubPart(
                     qe,
-                    new ModelRenderProperties(true, baseSprite, ItemTransforms.NO_TRANSFORMS),
-                    Sheets.cutoutBlockSheet());
+                    new ModelRenderProperties(true, new Material.Baked(baseSprite, false), ItemTransforms.NO_TRANSFORMS));
         }
     }
 
@@ -257,13 +254,28 @@ public class PipeModelGenerator {
         return baseSprite;
     }
 
+    /**
+     * 26.1: material flags replaced the old render-type/particle-icon pair on block models.
+     * Bit 1 = translucent chunk layer, bit 2 = animated sprite (see BakedQuad.MaterialInfo#flags).
+     */
+    public int materialFlags() {
+        int flags = 0;
+        if (baseSprite.transparency().hasTranslucent()) {
+            flags |= 1;
+        }
+        if (baseSprite.contents().isAnimated()) {
+            flags |= 2;
+        }
+        return flags;
+    }
+
     public record Unbaked(String pipeType, boolean transparent) {
         public static final MapCodec<Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(builder -> builder.group(
                 Codec.STRING.fieldOf("pipeType").forGetter(Unbaked::pipeType),
                 Codec.BOOL.fieldOf("transparent").forGetter(Unbaked::transparent)).apply(builder, Unbaked::new));
 
         private Material getBaseTexture() {
-            return new Material(TextureAtlas.LOCATION_BLOCKS, MdId.of("pipe/" + pipeType + "/base"));
+            return new Material(MdId.of("pipe/" + pipeType + "/base"));
         }
 
         private Identifier getConnectorModel() {
@@ -280,7 +292,7 @@ public class PipeModelGenerator {
                     .collect(Collectors.toMap(
                             Map.Entry::getKey,
                             e -> loadRotatedModels(e.getValue(), modelBaker)));
-            var baseSprite = modelBaker.sprites().get(getBaseTexture(), () -> "pipe item");
+            var baseSprite = modelBaker.materials().get(getBaseTexture(), () -> "pipe item").sprite();
 
             return new PipeModelGenerator(
                     baseSprite,

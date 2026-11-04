@@ -22,16 +22,25 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.renderer.block.FluidModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.AtlasIds;
 import net.minecraft.network.chat.Component;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 
 public final class FluidRenderUtil {
     private FluidRenderUtil() {
+    }
+
+    /**
+     * 26.1: fluid sprites/tints are no longer provided by IClientFluidTypeExtensions, they come from
+     * the fluid's baked model ({@code FluidStateModelSet}) and its {@code FluidTintSource}.
+     */
+    private static FluidModel getFluidModel(FluidResource resource) {
+        return Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(resource.getFluid().defaultFluidState());
     }
 
     public static TextureAtlasSprite getStillSprite(FluidResource resource) {
@@ -39,20 +48,28 @@ public final class FluidRenderUtil {
             return null;
         }
 
-        var renderProps = IClientFluidTypeExtensions.of(resource.getFluid());
-        var stack = resource.toStack(1);
-        var texture = renderProps.getStillTexture(stack);
-        if (texture == null) {
-            return null;
-        }
-
-        return Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.BLOCKS).getSprite(texture);
+        return getFluidModel(resource).stillMaterial().sprite();
     }
 
     public static int getTint(FluidResource resource) {
-        var renderProps = IClientFluidTypeExtensions.of(resource.getFluid());
-        var stack = resource.toStack(1);
-        return renderProps.getTintColor(stack);
+        if (resource.isEmpty()) {
+            return -1;
+        }
+
+        var tintSource = getFluidModel(resource).fluidTintSource();
+        return tintSource == null ? -1 : tintSource.colorAsStack(resource.toStack(1));
+    }
+
+    public static int getTint(FluidResource resource, BlockAndTintGetter level, BlockPos pos) {
+        if (resource.isEmpty()) {
+            return -1;
+        }
+
+        var tintSource = getFluidModel(resource).fluidTintSource();
+        if (tintSource == null) {
+            return -1;
+        }
+        return tintSource.colorInWorld(resource.getFluid().defaultFluidState().createLegacyBlock(), level, pos);
     }
 
     public static List<Component> getTooltip(FluidResource resource) {

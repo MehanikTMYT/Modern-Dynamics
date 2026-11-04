@@ -35,8 +35,9 @@ package dev.technici4n.moderndynamics.thirdparty.fabric;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.model.geom.builders.UVPair;
-import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.core.Direction;
 import net.neoforged.neoforge.client.model.quad.BakedColors;
 import net.neoforged.neoforge.client.model.quad.BakedNormals;
@@ -214,6 +215,13 @@ public interface QuadView {
      *         retain emissive light maps, for example, but the standard Minecraft renderer will not use them.
      */
     default BakedQuad toBakedQuad(TextureAtlasSprite sprite) {
+        var materialInfo = BakedQuad.MaterialInfo.of(
+                new Material.Baked(sprite, false),
+                sprite.transparency(),
+                colorIndex(),
+                hasShade(),
+                0 /* emission */,
+                false /* ambient occlusion */);
         return new BakedQuad(
                 copyPos(0, null),
                 copyPos(1, null),
@@ -223,14 +231,10 @@ public interface QuadView {
                 UVPair.pack(u(1), v(1)),
                 UVPair.pack(u(2), v(2)),
                 UVPair.pack(u(3), v(3)),
-                colorIndex(),
                 lightFace(),
-                sprite,
-                hasShade(),
-                0 /* emission */,
+                materialInfo,
                 BakedNormals.of(packedNormal(0), packedNormal(1), packedNormal(2), packedNormal(3)),
-                BakedColors.of(color(0), color(1), color(2), color(3)),
-                false);
+                BakedColors.of(color(0), color(1), color(2), color(3)));
     }
 
     private int packedNormal(int vertexIndex) {
