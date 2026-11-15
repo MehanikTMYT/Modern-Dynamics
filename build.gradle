@@ -9,7 +9,7 @@ plugins {
 def archivesBaseName = project.archives_base_name
 version = System.getenv("MOD_VERSION")
         ? System.getenv("MOD_VERSION")
-        : "0.0.0"
+        : "26.1.2.1-fleet.1" // fleet: default version (official parity 26.1.2.1 + our fixes)
 group = project.maven_group
 
 repositories {
@@ -52,6 +52,11 @@ sourceSets {
             srcDir "src/generated/resources"
         }
     }
+}
+
+// fleet: game-test sources stay on the dev classpath but are excluded from the published jar (official parity)
+tasks.named('jar', Jar).configure {
+    exclude 'dev/technici4n/moderndynamics/test/**'
 }
 
 neoForge {
