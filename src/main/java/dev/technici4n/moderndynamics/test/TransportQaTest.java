@@ -20,6 +20,7 @@ package dev.technici4n.moderndynamics.test;
 
 import dev.technici4n.moderndynamics.init.MdBlocks;
 import dev.technici4n.moderndynamics.init.MdItems;
+import dev.technici4n.moderndynamics.network.item.MaxParticipant;
 import dev.technici4n.moderndynamics.test.framework.MdGameTestHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -27,13 +28,14 @@ import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 
 /**
  * Fleet transport QA (26.1.2). Every assertion here is on actual resource counts:
@@ -41,6 +43,47 @@ import net.neoforged.neoforge.fluids.FluidType;
  * having stayed put, for the "receiver full" case).
  */
 public class TransportQaTest {
+    /** Rolled-back probes must not advance the extractor's round-robin path count. */
+    @MdGameTest
+    public void roundRobinTransactionRollback(MdGameTestHelper helper) {
+        var participant = new MaxParticipant();
+        try (var tx = Transaction.openRoot()) {
+            participant.addEntry(7, tx);
+        }
+        expectMax(helper, participant, 0);
+        try (var root = Transaction.openRoot()) {
+            participant.addEntry(2, root);
+            try (var nested = Transaction.open(root)) {
+                participant.addEntry(9, nested);
+            }
+            expectMax(helper, participant, 2);
+            try (var nested = Transaction.open(root)) {
+                participant.addEntry(4, nested);
+                nested.commit();
+            }
+            expectMax(helper, participant, 4);
+            // The enclosing root aborts, including the committed nested probe.
+        }
+        expectMax(helper, participant, 0);
+        try (var root = Transaction.openRoot()) {
+            participant.addEntry(3, root);
+            participant.addEntry(1, root);
+            root.commit();
+        }
+        expectMax(helper, participant, 3);
+        try (var root = Transaction.openRoot()) {
+            participant.addEntry(8, root);
+        }
+        expectMax(helper, participant, 3);
+        helper.succeed();
+    }
+
+    private static void expectMax(MdGameTestHelper helper, MaxParticipant participant, int expected) {
+        if (participant.getMax() != expected) {
+            helper.fail("Round-robin checked paths: expected " + expected + ", got " + participant.getMax(), BlockPos.ZERO);
+        }
+    }
+
     private static int countItem(MdGameTestHelper helper, BlockPos pos, Item item) {
         var container = helper.getBlockEntity(pos, ChestBlockEntity.class);
         int total = 0;

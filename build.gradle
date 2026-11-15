@@ -17,7 +17,6 @@ repositories {
         name 'modmaven'
         url "https://modmaven.dev/"
         content {
-            includeGroup "mezz.jei"
         }
     }
     maven {
@@ -32,9 +31,6 @@ repositories {
 }
 
 dependencies {
-    compileOnly("mezz.jei:jei-${project.jei_minecraft_version}-neoforge:${project.jei_version}") {
-        exclude group: "mezz.jei"
-    }
 
     compileOnly("maven.modrinth:jade:${project.jade_version}")
     runtimeOnly("maven.modrinth:jade:${project.jade_version}")
