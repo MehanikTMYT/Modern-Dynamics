@@ -35,8 +35,14 @@ import net.minecraft.gametest.framework.TestData;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
+import net.neoforged.neoforge.gametest.GameTestHooks;
+import net.neoforged.neoforge.registries.RegisterEvent;
 
+// This subscriber is discovered only on the dev classpath: test/** is excluded from the jar.
+@EventBusSubscriber(modid = MdId.MOD_ID)
 public final class MdGameTests {
     private static final ResourceKey<TestEnvironmentDefinition<?>> TEST_ENVIRONMENT_KEY = ResourceKey.create(Registries.TEST_ENVIRONMENT,
             MdId.of("environment"));
@@ -55,7 +61,11 @@ public final class MdGameTests {
     private MdGameTests() {
     }
 
-    public static void registerFunctions() {
+    @SubscribeEvent
+    public static void registerFunctions(RegisterEvent event) {
+        if (event.getRegistryKey() != Registries.TEST_FUNCTION || !GameTestHooks.isGametestEnabled()) {
+            return;
+        }
         tests.clear();
         for (var testClass : testClasses) {
             for (var testMethod : testClass.getMethods()) {
@@ -91,6 +101,7 @@ public final class MdGameTests {
         }
     }
 
+    @SubscribeEvent
     public static void registerTests(RegisterGameTestsEvent event) {
         var environment = event.registerEnvironment(TEST_ENVIRONMENT);
         for (var entry : tests.entrySet()) {
